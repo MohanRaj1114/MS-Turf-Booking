@@ -1,0 +1,159 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 25% 6%;
+    --foreground: 210 40% 96%;
+
+    --card: 220 25% 10%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 220 25% 10%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 195 100% 50%;
+    --primary-foreground: 220 25% 6%;
+
+    --secondary: 220 20% 16%;
+    --secondary-foreground: 210 40% 90%;
+
+    --muted: 220 15% 14%;
+    --muted-foreground: 215 15% 55%;
+
+    --accent: 280 90% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
+    --ring: 195 100% 50%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 220 25% 8%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 195 100% 50%;
+    --sidebar-primary-foreground: 220 25% 6%;
+    --sidebar-accent: 220 20% 16%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 220 20% 18%;
+    --sidebar-ring: 195 100% 50%;
+
+    /* Custom tokens */
+    --turf-green: 195 100% 50%;
+    --turf-green-light: 195 85% 65%;
+    --turf-amber: 280 90% 60%;
+    --turf-amber-light: 320 85% 65%;
+    --turf-surface: 220 25% 8%;
+    --turf-field: 220 25% 8%;
+    --neon-cyan: 195 100% 50%;
+    --neon-purple: 280 90% 60%;
+    --neon-pink: 320 85% 65%;
+    --gradient-hero: linear-gradient(135deg, hsl(195, 100%, 50%) 0%, hsl(280, 90%, 60%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(280, 90%, 60%) 0%, hsl(320, 85%, 65%) 100%);
+    --shadow-card: 0 4px 24px -4px hsl(195 100% 50% / 0.12);
+    --shadow-elevated: 0 12px 40px -8px hsl(195 100% 50% / 0.25);
+    --shadow-neon: 0 0 20px hsl(195 100% 50% / 0.3), 0 0 60px hsl(195 100% 50% / 0.1);
+    --shadow-neon-purple: 0 0 20px hsl(280 90% 60% / 0.3), 0 0 60px hsl(280 90% 60% / 0.1);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply text-foreground font-body antialiased;
+    background-color: hsl(var(--background));
+    background-image: 
+      linear-gradient(to right, hsl(var(--background) / 1) 0%, hsl(var(--background) / 0.8) 50%, transparent 100%),
+      linear-gradient(to top, hsl(var(--background) / 0.8) 0%, transparent 100%),
+      url('./assets/hero-turf.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer utilities {
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .shadow-neon {
+    box-shadow: var(--shadow-neon);
+  }
+
+  .shadow-neon-purple {
+    box-shadow: var(--shadow-neon-purple);
+  }
+
+  .slot-available {
+    @apply bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 cursor-pointer;
+  }
+
+  .slot-booked {
+    @apply bg-muted border-muted text-muted-foreground cursor-not-allowed opacity-60;
+  }
+
+  .slot-selected {
+    @apply bg-primary text-primary-foreground border-primary;
+  }
+
+  .glow-text {
+    text-shadow: 0 0 20px hsl(195 100% 50% / 0.5), 0 0 40px hsl(195 100% 50% / 0.2);
+  }
+
+  .glow-text-purple {
+    text-shadow: 0 0 20px hsl(280 90% 60% / 0.5), 0 0 40px hsl(280 90% 60% / 0.2);
+  }
+
+  .card-3d {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+
+  .glass {
+    background: hsl(220 25% 10% / 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid hsl(195 100% 50% / 0.15);
+  }
+
+  .neon-border {
+    border: 1px solid hsl(195 100% 50% / 0.3);
+    box-shadow: inset 0 0 20px hsl(195 100% 50% / 0.05), 0 0 15px hsl(195 100% 50% / 0.1);
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .glass-card {
+    background: hsl(220 25% 10% / 0.4);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(195 100% 50% / 0.2);
+  }
+}
