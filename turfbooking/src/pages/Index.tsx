@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { SPORTS } from "@/lib/constants";
 import heroImage from "@/assets/hero-turf.jpg";
 import { useRef, useEffect } from "react";
+import { getApiUrl } from "@/utils/apiConfig";
+
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -63,7 +65,7 @@ import Hero from "@/components/Hero";
 
 const Index = () => {
   useEffect(() => {
-    fetch("/api/health")
+    fetch(getApiUrl("/api/health"))
       .then((res) => res.json())
       .then((data) => console.log("Backend response:", data))
       .catch((err) => console.error("Backend connection failed:", err));

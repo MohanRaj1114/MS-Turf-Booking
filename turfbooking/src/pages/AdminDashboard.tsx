@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { format, isSameDay } from "date-fns";
 import { Booking } from "@/lib/constants";
 import { logAction } from "@/lib/logger";
+import { getApiUrl } from "@/utils/apiConfig";
+
 
 const AdminDashboard = () => {
     const { logout, user: adminUser } = useAuth();
@@ -41,7 +43,7 @@ const AdminDashboard = () => {
         try {
             // Fetch backend stats
             try {
-                const statsRes = await fetch("/api/payments/stats");
+                const statsRes = await fetch(getApiUrl("/api/payments/stats"));
                 if (statsRes.ok) {
                     const statsData = await statsRes.json();
                     setBackendStats(statsData);

@@ -29,6 +29,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ImportantNotice } from "@/components/ImportantNotice";
 import { useAuth } from "@/hooks/useAuth";
+import { getApiUrl } from "@/utils/apiConfig";
+
 
 // Simulate some booked slots
 const BOOKED_SLOTS: Record<string, string[]> = {
@@ -171,7 +173,7 @@ const BookingPage = () => {
 
     try {
       // Step 1: Create Razorpay order from backend
-      const orderRes = await fetch("/api/payments/create-order", {
+      const orderRes = await fetch(getApiUrl("/api/payments/create-order"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: totalAmount }),
@@ -201,7 +203,7 @@ const BookingPage = () => {
         handler: async (response: any) => {
           try {
             // Step 3: Verify payment on backend, which also saves to Supabase
-            const verifyRes = await fetch("/api/payments/verify", {
+            const verifyRes = await fetch(getApiUrl("/api/payments/verify"), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({

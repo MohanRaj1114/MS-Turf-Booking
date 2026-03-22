@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { toast } from "sonner";
+import { getApiUrl } from "@/utils/apiConfig";
+
 
 interface User {
     id: string;
@@ -47,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const login = async (email: string, password: string) => {
         setIsLoading(true);
         try {
-            const res = await fetch('/api/users/login', {
+            const res = await fetch(getApiUrl('/api/users/login'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
@@ -94,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const signup = async (data: SignupData) => {
         setIsLoading(true);
         try {
-            const res = await fetch('/api/users', {
+            const res = await fetch(getApiUrl('/api/users'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -119,7 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const sendOTP = async (mobile: string) => {
         try {
-            const res = await fetch('/api/users/send-otp', {
+            const res = await fetch(getApiUrl('/api/users/send-otp'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ mobile })
@@ -136,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const verifyOTP = async (mobile: string, otp: string) => {
         try {
-            const res = await fetch('/api/users/verify-otp', {
+            const res = await fetch(getApiUrl('/api/users/verify-otp'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ mobile, otp })
