@@ -66,7 +66,7 @@ const signupSchema = z.object({
   const [otp, setOtp] = useState("");
   const [signupData, setSignupData] = useState<any>(null);
 
-  const from = location.state?.from?.pathname || "/";
+  const from = location.state?.from?.pathname || "/home";
 
   const { register: registerLogin, handleSubmit: handleSubmitLogin, formState: { errors: loginErrors } } = useForm({
     resolver: zodResolver(loginSchema),

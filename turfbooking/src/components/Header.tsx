@@ -16,6 +16,8 @@ const Header = () => {
     { label: "My Bookings", path: "/bookings" },
   ];
 
+  if (location.pathname === "/") return null;
+
   return (
     <header className="sticky top-0 z-50 border-b border-primary/10 glass">
       <div className="container flex h-16 items-center justify-between">

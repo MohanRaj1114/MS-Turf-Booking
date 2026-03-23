@@ -72,14 +72,31 @@ const BookingPage = () => {
   const [slots, setSlots] = useState<Omit<TimeSlot, "id" | "isBooked">[]>([]);
 
   useEffect(() => {
-    const savedVenues = localStorage.getItem("admin_venues");
-    if (savedVenues) {
-      const parsed = JSON.parse(savedVenues);
-      // Filter out sample venues
-      setVenues(parsed.filter((v: any) => !v.id.startsWith('t')));
-    } else {
-      setVenues([]);
-    }
+    const fetchVenues = async () => {
+      try {
+        const res = await fetch(getApiUrl("/api/turfs"));
+        if (res.ok) {
+          const data = await res.json();
+          // Prefer backend data, fallback to localStorage if needed for transition
+          if (data.length > 0) {
+            setVenues(data.filter((v: any) => v.isActive));
+          } else {
+            const savedVenues = localStorage.getItem("admin_venues");
+            if (savedVenues) {
+              setVenues(JSON.parse(savedVenues).filter((v: any) => !v.id.startsWith('t')));
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch venues:", err);
+        const savedVenues = localStorage.getItem("admin_venues");
+        if (savedVenues) {
+          setVenues(JSON.parse(savedVenues).filter((v: any) => !v.id.startsWith('t')));
+        }
+      }
+    };
+
+    fetchVenues();
 
     const savedSlots = localStorage.getItem("admin_slots");
     if (savedSlots) {
@@ -88,6 +105,27 @@ const BookingPage = () => {
       setSlots(TIME_SLOTS);
     }
   }, []);
+
+  const [backendBookedSlots, setBackendBookedSlots] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchBookedSlots = async () => {
+      if (!selectedTurf || !selectedDate) return;
+      
+      try {
+        const dateStr = format(selectedDate, "yyyy-MM-dd");
+        const res = await fetch(getApiUrl(`/api/bookings/check?turfId=${selectedTurf.id}&date=${dateStr}`));
+        if (res.ok) {
+          const data = await res.json();
+          setBackendBookedSlots(data);
+        }
+      } catch (err) {
+        console.error("Failed to check availability:", err);
+      }
+    };
+
+    fetchBookedSlots();
+  }, [selectedTurf, selectedDate]);
 
   const filteredTurfs = useMemo(
     () => {
@@ -101,8 +139,10 @@ const BookingPage = () => {
   const bookedStarts = useMemo(() => {
     if (!selectedTurf || !selectedDate) return [];
     const key = `${selectedTurf.id}-${format(selectedDate, "yyyy-MM-dd")}`;
-    return BOOKED_SLOTS[key] || [];
-  }, [selectedTurf, selectedDate]);
+    const simulated = BOOKED_SLOTS[key] || [];
+    // Combine backend data with simulated data (though ideally simulated is removed)
+    return Array.from(new Set([...simulated, ...backendBookedSlots]));
+  }, [selectedTurf, selectedDate, backendBookedSlots]);
 
   const selectedSlot = TIME_SLOTS.find((s) => s.start === selectedSlotStart);
 

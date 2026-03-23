@@ -7,6 +7,7 @@ const usersRoute = require("./routes/users");
 const bookingsRoute = require("./routes/bookings");
 const paymentsRoute = require("./routes/payments");
 const testVoiceRoute = require("./routes/testVoice");
+const turfsRoute = require("./routes/turfs");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,6 +30,7 @@ app.use("/api/users", usersRoute);
 app.use("/api/bookings", bookingsRoute);
 app.use("/api/payments", paymentsRoute);
 app.use("/api/test-voice", testVoiceRoute);
+app.use("/api/turfs", turfsRoute);
 
 // Start Server
 const server = app.listen(PORT, () => {

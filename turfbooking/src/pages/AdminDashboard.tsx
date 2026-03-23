@@ -26,6 +26,8 @@ const AdminDashboard = () => {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [editingVenue, setEditingVenue] = useState<Partial<Turf> | null>(null);
     const [isAdding, setIsAdding] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [timeFilter, setTimeFilter] = useState("all");
 
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +43,7 @@ const AdminDashboard = () => {
         setIsLoading(true);
         setError(null);
         try {
-            // Fetch backend stats
+            // 1. Fetch backend financial stats
             try {
                 const statsRes = await fetch(getApiUrl("/api/payments/stats"));
                 if (statsRes.ok) {
@@ -52,33 +54,47 @@ const AdminDashboard = () => {
                 console.error("Failed to fetch backend stats:", err);
             }
 
-            // Simulate API delay/potential failure
-            await new Promise((resolve, reject) => {
-                setTimeout(() => {
-                    // Randomly fail for demo (5% chance)
-                    if (Math.random() < 0.05) reject(new Error("Storage Timeout"));
-                    else resolve(true);
-                }, 800);
-            });
+            // 2. Fetch Venues from Backend
+            try {
+                const venuesRes = await fetch(getApiUrl("/api/turfs"));
+                if (venuesRes.ok) {
+                    const data = await venuesRes.json();
+                    if (data.length > 0) {
+                        setVenues(data);
+                        localStorage.setItem("admin_venues", JSON.stringify(data));
+                    } else {
+                        // Fallback to localStorage if DB is empty
+                        const saved = JSON.parse(localStorage.getItem("admin_venues") || "[]");
+                        setVenues(saved.filter((v: any) => !v.id.startsWith('t')));
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch venues from backend:", err);
+                const saved = JSON.parse(localStorage.getItem("admin_venues") || "[]");
+                setVenues(saved.filter((v: any) => !v.id.startsWith('t')));
+            }
 
-            const savedVenues = localStorage.getItem("admin_venues");
-            if (savedVenues) {
-                const parsed = JSON.parse(savedVenues);
-                // Filter out default sample venues (ID starting with 't')
-                const userAddedOnly = parsed.filter((v: any) => !v.id.startsWith('t'));
-                
-                // Migrate old data if necessary
-                const migrated = userAddedOnly.map((v: any) => ({
-                    ...v,
-                    normalPrice: v.normalPrice ?? v.basePrice,
-                    peakPrice: v.peakPrice ?? (v.basePrice + 500)
-                }));
-                setVenues(migrated);
-                // Update localStorage to permanently remove samples if they were there
-                localStorage.setItem("admin_venues", JSON.stringify(migrated));
-            } else {
-                setVenues([]);
-                localStorage.setItem("admin_venues", JSON.stringify([]));
+            // 3. Fetch Bookings from Backend
+            try {
+                const bookingsRes = await fetch(getApiUrl("/api/bookings"));
+                if (bookingsRes.ok) {
+                    const data = await bookingsRes.json();
+                    // Map snake_case from DB to camelCase for frontend
+                    const mapped = data.map((b: any) => ({
+                        ...b,
+                        date: b.booking_date,
+                        playerName: b.player_name,
+                        teamName: b.team_name,
+                        slot: typeof b.slot === 'string' ? JSON.parse(b.slot) : b.slot,
+                        bookedAt: b.created_at
+                    }));
+                    setBookings(mapped);
+                    localStorage.setItem("bookings", JSON.stringify(mapped));
+                }
+            } catch (err) {
+                console.error("Failed to fetch bookings from backend:", err);
+                const local = JSON.parse(localStorage.getItem("bookings") || "[]");
+                setBookings(local);
             }
 
             const savedSlots = localStorage.getItem("admin_slots");
@@ -86,11 +102,7 @@ const AdminDashboard = () => {
                 setSlots(JSON.parse(savedSlots));
             } else {
                 setSlots(TIME_SLOTS);
-                localStorage.setItem("admin_slots", JSON.stringify(TIME_SLOTS));
             }
-
-            const allBookings = JSON.parse(localStorage.getItem("bookings") || "[]");
-            setBookings(allBookings.sort((a: any, b: any) => new Date(b.bookedAt).getTime() - new Date(a.bookedAt).getTime()));
 
         } catch (err) {
             console.error("Admin data load error:", err);
@@ -109,7 +121,7 @@ const AdminDashboard = () => {
         localStorage.setItem("admin_venues", JSON.stringify(updatedVenues));
     };
 
-    const handleAddVenue = () => {
+    const handleAddVenue = async () => {
         if (!editingVenue?.name || !editingVenue?.sport || !editingVenue?.normalPrice || !editingVenue?.peakPrice) {
             toast.error("Please fill in basic venue details and prices");
             return;
@@ -133,6 +145,20 @@ const AdminDashboard = () => {
             rating: editingVenue.rating || 4.5,
             isActive: editingVenue.isActive !== undefined ? editingVenue.isActive : true
         };
+
+        // Save to Backend
+        try {
+            const res = await fetch(getApiUrl("/api/turfs"), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newVenue)
+            });
+            if (!res.ok) throw new Error("Failed to save to database");
+            toast.success("Syncing with database...");
+        } catch (err) {
+            console.error("Backend sync failed:", err);
+            toast.warning("Saved locally. Backend sync failed.");
+        }
 
         let updated;
         if (venues.find(v => v.id === newVenue.id)) {
@@ -185,6 +211,24 @@ const AdminDashboard = () => {
         logAction("slot_type_changed", `Slot ${updatedSlots[index].label} type changed to ${newType}`, adminUser?.id);
         toast.info(`Slot changed to ${newType}`);
     };
+
+    const filteredBookings = bookings.filter(b => {
+        const matchesSearch = b.playerName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                             b.teamName.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        if (!matchesSearch) return false;
+
+        const bookingDate = new Date(b.date);
+        const today = new Date();
+        const tomorrow = new Date();
+        tomorrow.setDate(today.getDate() + 1);
+
+        if (timeFilter === "today") return isSameDay(bookingDate, today);
+        if (timeFilter === "tomorrow") return isSameDay(bookingDate, tomorrow);
+        if (timeFilter === "future") return bookingDate > today;
+        
+        return true;
+    });
 
     const stats = {
         totalBookings: bookings.length,
@@ -279,6 +323,7 @@ const AdminDashboard = () => {
                             { label: "Today's Collection", val: `₹${stats.dailyCollection}`, icon: CreditCard, color: "text-emerald-500", bg: "bg-emerald-500/10" },
                             { label: "Refund Amount", val: `₹${stats.refundAmount}`, icon: Ban, color: "text-rose-500", bg: "bg-rose-500/10" },
                             { label: "Total Revenue", val: `₹${stats.totalRevenue}`, icon: IndianRupee, color: "text-primary", bg: "bg-primary/10" },
+                            { label: "Tomorrow's Bookings", val: bookings.filter(b => isSameDay(new Date(b.date), new Date(new Date().setDate(new Date().getDate() + 1)))).length, icon: CalendarIcon, color: "text-amber-500", bg: "bg-amber-500/10" },
                         ].map((s, i) => (
                             <Card key={i} className="glass-card overflow-hidden group">
                                 <CardContent className="p-6">
@@ -377,8 +422,22 @@ const AdminDashboard = () => {
                             <div className="flex gap-2">
                                 <div className="relative">
                                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                    <Input placeholder="Search Team/Player..." className="pl-9 h-9 w-[200px] bg-muted/20 border-white/10 text-xs" />
+                                    <Input 
+                                        placeholder="Search Team/Player..." 
+                                        className="pl-9 h-9 w-[200px] bg-muted/20 border-white/10 text-xs" 
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
                                 </div>
+                                <select 
+                                    className="bg-muted/20 border border-white/10 rounded-md px-3 text-[10px] font-black uppercase tracking-widest outline-none focus:border-primary/40"
+                                    value={timeFilter}
+                                    onChange={(e) => setTimeFilter(e.target.value)}
+                                >
+                                    <option value="all" className="bg-black">All Bookings</option>
+                                    <option value="today" className="bg-black">Today</option>
+                                    <option value="tomorrow" className="bg-black">Tomorrow</option>
+                                    <option value="future" className="bg-black">Upcoming</option>
+                                </select>
                             </div>
                         </div>
                         <div className="overflow-x-auto">
@@ -394,7 +453,7 @@ const AdminDashboard = () => {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {bookings.map((booking) => (
+                                    {filteredBookings.map((booking) => (
                                         <TableRow key={booking.id} className="border-white/5 hover:bg-white/5">
                                             <TableCell>
                                                 <div className="space-y-1">

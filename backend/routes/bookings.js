@@ -3,9 +3,51 @@ const router = express.Router();
 const supabase = require('../config/supabase');
 const { scheduleConfirmationCall } = require('../utils/voiceService');
 
+// GET all bookings (Admin)
+router.get('/', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: "Database misconfigured" });
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+// GET bookings for a specific turf and date (Availability Check)
+router.get('/check', async (req, res) => {
+  const { turfId, date } = req.query;
+  
+  if (!supabase) return res.status(500).json({ error: "Database misconfigured" });
+  if (!turfId || !date) return res.status(400).json({ error: "turfId and date are required" });
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('slot')
+    .eq('turf_id', turfId)
+    .eq('booking_date', date)
+    .eq('status', 'confirmed');
+
+  if (error) return res.status(400).json({ error: error.message });
+  
+  // Return just an array of booked slot starts for easy checking
+  const bookedSlots = data.map(b => {
+    try {
+      const slotObj = typeof b.slot === 'string' ? JSON.parse(b.slot) : b.slot;
+      return slotObj.start;
+    } catch (e) {
+      return null;
+    }
+  }).filter(s => s !== null);
+
+  res.json(bookedSlots);
+});
+
 // CREATE a booking
 router.post('/', async (req, res) => {
-  const { userId, turfId, date, slot, playerName, teamName } = req.body;
+  const { userId, turfId, date, slot, playerName, teamName, phone } = req.body;
   
   if (!supabase) {
     return res.status(500).json({ error: "Database misconfigured" });
@@ -30,7 +72,7 @@ router.post('/', async (req, res) => {
   // Schedule voice reminder call (Flipkart style)
   const booking = data[0];
   if (booking) {
-    scheduleConfirmationCall(booking.id, playerName, req.body.phone || "7904095892");
+    scheduleConfirmationCall(booking.id, playerName, phone || "7904095892");
   }
 
   res.status(201).json({ message: "Booking confirmed", booking: data });
