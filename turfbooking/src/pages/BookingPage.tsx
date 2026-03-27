@@ -32,10 +32,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { getApiUrl } from "@/utils/apiConfig";
 
 
-// Simulate some booked slots
-const BOOKED_SLOTS: Record<string, string[]> = {
-  [`t1-${format(new Date(), "yyyy-MM-dd")}`]: ["09:00", "15:00"],
-};
+// Availability from backend updated dynamically
+const BOOKED_SLOTS: Record<string, string[]> = {};
 
 const BookingPage = () => {
   const [searchParams] = useSearchParams();
@@ -80,10 +78,12 @@ const BookingPage = () => {
           // Prefer backend data, fallback to localStorage if needed for transition
           if (data.length > 0) {
             setVenues(data.filter((v: any) => v.isActive));
+            // Sync local storage with backend to keep admin/user in sync
+            localStorage.setItem("admin_venues", JSON.stringify(data));
           } else {
             const savedVenues = localStorage.getItem("admin_venues");
             if (savedVenues) {
-              setVenues(JSON.parse(savedVenues).filter((v: any) => !v.id.startsWith('t')));
+              setVenues(JSON.parse(savedVenues).filter((v: any) => v.isActive));
             }
           }
         }
@@ -91,7 +91,7 @@ const BookingPage = () => {
         console.error("Failed to fetch venues:", err);
         const savedVenues = localStorage.getItem("admin_venues");
         if (savedVenues) {
-          setVenues(JSON.parse(savedVenues).filter((v: any) => !v.id.startsWith('t')));
+          setVenues(JSON.parse(savedVenues).filter((v: any) => v.isActive));
         }
       }
     };
@@ -138,10 +138,9 @@ const BookingPage = () => {
 
   const bookedStarts = useMemo(() => {
     if (!selectedTurf || !selectedDate) return [];
-    const key = `${selectedTurf.id}-${format(selectedDate, "yyyy-MM-dd")}`;
-    const simulated = BOOKED_SLOTS[key] || [];
-    // Combine backend data with simulated data (though ideally simulated is removed)
-    return Array.from(new Set([...simulated, ...backendBookedSlots]));
+    // Only use backend data for accuracy
+    console.log(`Checking availability for ${selectedTurf.name} on ${format(selectedDate, "yyyy-MM-dd")}:`, backendBookedSlots);
+    return backendBookedSlots;
   }, [selectedTurf, selectedDate, backendBookedSlots]);
 
   const selectedSlot = TIME_SLOTS.find((s) => s.start === selectedSlotStart);

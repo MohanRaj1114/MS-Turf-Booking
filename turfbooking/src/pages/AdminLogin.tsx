@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ShieldAlert, ShieldCheck, Lock, User } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Lock, User, Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
 
 const AdminLogin = () => {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
     const { adminLogin, isLoading } = useAuth();
     const navigate = useNavigate();
@@ -69,13 +70,20 @@ const AdminLogin = () => {
                                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/40" />
                                         <Input
                                             id="password"
-                                            type="password"
+                                            type={showPassword ? "text" : "password"}
                                             placeholder="Password"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
-                                            className="pl-10 bg-muted/30 border-primary/10 focus:border-primary/40 h-12"
+                                            className="pl-10 pr-10 bg-muted/30 border-primary/10 focus:border-primary/40 h-12"
                                             required
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/40 hover:text-primary transition-colors"
+                                        >
+                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
                                     </div>
                                 </div>
                             </div>

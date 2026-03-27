@@ -153,8 +153,18 @@ const AdminDashboard = () => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(newVenue)
             });
-            if (!res.ok) throw new Error("Failed to save to database");
-            toast.success("Syncing with database...");
+        if (res.ok) {
+            const savedData = await res.json();
+            toast.success("Database synced successfully");
+            // If backend returned the created venue, we use that for state
+            if (savedData && savedData.id) {
+                const refreshed = [...venues.filter(v => v.id !== savedData.id), savedData];
+                saveVenues(refreshed);
+                setIsAdding(false);
+                setEditingVenue(null);
+                return;
+            }
+        }
         } catch (err) {
             console.error("Backend sync failed:", err);
             toast.warning("Saved locally. Backend sync failed.");

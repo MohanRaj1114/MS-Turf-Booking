@@ -5,12 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Trophy, Target, Dumbbell, Timer, Star, Award, Loader2 } from "lucide-react";
+import { Trophy, Target, Dumbbell, Timer, Star, Award, Loader2, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 
 const FloatingIcon = ({ icon: Icon, delay = 0, x = 0, y = 0 }: { icon: any, delay?: number, x?: number, y?: number }) => (
   <motion.div
@@ -34,17 +39,23 @@ const FloatingIcon = ({ icon: Icon, delay = 0, x = 0, y = 0 }: { icon: any, dela
   </motion.div>
 );
 
+const passwordValidation = z.string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number");
+
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: passwordValidation,
 });
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   mobile: z.string().min(10, "Mobile number must be at least 10 digits"),
-  password: z.string().min(6, "Password must be at least 6 characters").optional().or(z.literal("")),
-  confirmPassword: z.string().min(6, "Confirm password must be at least 6 characters").optional().or(z.literal("")),
+  password: passwordValidation.optional().or(z.literal("")),
+  confirmPassword: z.string().optional().or(z.literal("")),
 }).refine((data) => {
   if (data.password || data.confirmPassword) {
     return data.password === data.confirmPassword;
@@ -65,6 +76,9 @@ const signupSchema = z.object({
   const [isOtpVerified, setIsOtpVerified] = useState(false);
   const [otp, setOtp] = useState("");
   const [signupData, setSignupData] = useState<any>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
 
   const from = location.state?.from?.pathname || "/home";
 
@@ -208,12 +222,21 @@ const signupSchema = z.object({
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="password">Password</Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          {...registerLogin("password")}
-                          className={`bg-background/50 ${loginErrors.password ? 'border-destructive' : ''}`}
-                        />
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            {...registerLogin("password")}
+                            className={`bg-background/50 pr-10 ${loginErrors.password ? 'border-destructive' : ''}`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
                         {loginErrors.password && <p className="text-xs text-destructive">{(loginErrors.password as any).message}</p>}
                       </div>
                     </CardContent>
@@ -273,16 +296,24 @@ const signupSchema = z.object({
                           animate={{ opacity: 1, y: 0 }}
                           className="space-y-4 py-4 border-y border-primary/10 my-4"
                         >
-                          <div className="space-y-1">
-                            <Label htmlFor="mobile-otp" className="text-xs">Mobile OTP (Sent to {signupData?.mobile})</Label>
-                            <Input
-                              id="mobile-otp"
-                              placeholder="Mobile OTP"
-                              value={otp}
-                              onChange={(e) => setOtp(e.target.value)}
-                              className="bg-background/50 text-center tracking-widest h-10"
+                          <div className="space-y-3 flex flex-col items-center">
+                            <Label htmlFor="mobile-otp" className="text-xs self-start">Mobile OTP (Sent to {signupData?.mobile})</Label>
+                            <InputOTP
                               maxLength={6}
-                            />
+                              value={otp}
+                              onChange={(value) => setOtp(value)}
+                              className="gap-2"
+                            >
+                              <InputOTPGroup className="gap-2">
+                                {[0, 1, 2, 3, 4, 5].map((index) => (
+                                  <InputOTPSlot
+                                    key={index}
+                                    index={index}
+                                    className="bg-background/50 border-primary/20 w-12 h-14 text-xl shadow-neon transition-all focus:ring-primary/50"
+                                  />
+                                ))}
+                              </InputOTPGroup>
+                            </InputOTP>
                           </div>
                           <Button 
                             variant="link" 
@@ -303,22 +334,40 @@ const signupSchema = z.object({
                         >
                           <div className="space-y-1">
                             <Label htmlFor="signup-password">Password</Label>
-                            <Input
-                              id="signup-password"
-                              type="password"
-                              {...registerSignup("password")}
-                              className={`bg-background/50 ${signupErrors.password ? 'border-destructive' : ''}`}
-                            />
+                            <div className="relative">
+                              <Input
+                                id="signup-password"
+                                type={showPassword ? "text" : "password"}
+                                {...registerSignup("password")}
+                                className={`bg-background/50 pr-8 ${signupErrors.password ? 'border-destructive' : ''}`}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                              >
+                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                              </button>
+                            </div>
                             {signupErrors.password && <p className="text-[10px] text-destructive">{(signupErrors.password as any).message}</p>}
                           </div>
                           <div className="space-y-1">
                             <Label htmlFor="signup-confirm">Confirm</Label>
-                            <Input
-                              id="signup-confirm"
-                              type="password"
-                              {...registerSignup("confirmPassword")}
-                              className={`bg-background/50 ${signupErrors.confirmPassword ? 'border-destructive' : ''}`}
-                            />
+                            <div className="relative">
+                              <Input
+                                id="signup-confirm"
+                                type={showConfirmPassword ? "text" : "password"}
+                                {...registerSignup("confirmPassword")}
+                                className={`bg-background/50 pr-8 ${signupErrors.confirmPassword ? 'border-destructive' : ''}`}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                              >
+                                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                              </button>
+                            </div>
                             {signupErrors.confirmPassword && <p className="text-[10px] text-destructive">{(signupErrors.confirmPassword as any).message}</p>}
                           </div>
                         </motion.div>

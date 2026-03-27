@@ -47,7 +47,7 @@ router.get('/check', async (req, res) => {
 
 // CREATE a booking
 router.post('/', async (req, res) => {
-  const { userId, turfId, date, slot, playerName, teamName, phone } = req.body;
+  const { userId, turfId, date, slot, playerName, teamName, phone, amount } = req.body;
   
   if (!supabase) {
     return res.status(500).json({ error: "Database misconfigured" });
@@ -60,9 +60,11 @@ router.post('/', async (req, res) => {
       user_id: userId, 
       turf_id: turfId, 
       booking_date: date, 
-      slot: JSON.stringify(slot), 
+      slot: typeof slot === 'object' ? JSON.stringify(slot) : slot, 
       player_name: playerName, 
       team_name: teamName,
+      phone: phone,
+      amount: amount,
       status: 'confirmed'
     }])
     .select();
